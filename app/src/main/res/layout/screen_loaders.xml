@@ -17,7 +17,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Loader-Pipeline"
+            android:text="Loader pipeline"
             android:textAppearance="?attr/textAppearanceHeadlineSmall"
             android:textStyle="bold" />
 
@@ -124,7 +124,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="FDL1-Load address"
+                    android:hint="FDL1 load address"
                     app:helperText="Example: 0x5500 or 0x65000800">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -231,7 +231,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="FDL2-Load address"
+                    android:hint="FDL2 load address"
                     app:helperText="The address is device-specific">
 
                     <com.google.android.material.textfield.TextInputEditText

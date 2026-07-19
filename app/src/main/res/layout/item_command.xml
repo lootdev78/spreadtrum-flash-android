@@ -92,7 +92,7 @@
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:contentDescription="Duplizieren"
+                    android:contentDescription="Duplicate"
                     app:icon="@drawable/ic_copy" />
 
                 <com.google.android.material.button.MaterialButton

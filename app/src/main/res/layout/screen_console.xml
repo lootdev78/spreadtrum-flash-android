@@ -78,7 +78,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Kopieren"
+            android:text="Copy"
             app:icon="@drawable/ic_copy" />
 
         <com.google.android.material.button.MaterialButton

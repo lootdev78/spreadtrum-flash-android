@@ -356,7 +356,7 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<TextView>(R.id.commandDescription).text = spec.description
         findViewById<TextView>(R.id.commandStageText).text = if (spec.stages.isEmpty()) {
-            "Stage: beliebig"
+            "Stage: any"
         } else {
             "Stage: ${spec.stages.joinToString { it.label }}"
         }
@@ -562,7 +562,7 @@ class MainActivity : AppCompatActivity() {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 when {
                     !ownership.isChecked -> ownership.error = "Confirmation required"
-                    input.text.toString() != confirmation -> input.error = "Exakt $confirmation eingeben"
+                    input.text.toString() != confirmation -> input.error = "Enter exactly $confirmation"
                     else -> {
                         dialog.dismiss()
                         onConfirmed()
@@ -578,7 +578,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.copyLogButton).setOnClickListener {
             val clipboard = getSystemService(ClipboardManager::class.java)
             clipboard.setPrimaryClip(ClipData.newPlainText("SPRD Flash Log", viewModel.logs.value.joinToString("\n")))
-            toast("Log kopiert")
+            toast("Log copied")
         }
         findViewById<MaterialButton>(R.id.exportLogButton).setOnClickListener {
             createLogDocument.launch("spreadtrum_flash_${System.currentTimeMillis()}.log")
@@ -674,13 +674,13 @@ class MainActivity : AppCompatActivity() {
         globalDetail.text = buildString {
             append(state.connectedLabel ?: "Select a USB device, then connect")
             if (state.currentCommand.isNotBlank()) append(" · ${state.currentCommand}")
-            if (state.partitionCount > 0) append(" · ${state.partitionCount} Partitionen")
+            if (state.partitionCount > 0) append(" · ${state.partitionCount} partitions")
         }
         stageChip.text = state.stage.label
         findViewById<Chip>(R.id.consoleStageChip).text = state.stage.label
         findViewById<TextView>(R.id.consoleSubtitle).text = state.status
         statusDot.setBackgroundResource(if (state.connectedLabel != null) R.drawable.status_dot_on else R.drawable.status_dot_off)
-        connectButton.text = if (state.connectedLabel != null) "Trennen" else "Verbinden"
+        connectButton.text = if (state.connectedLabel != null) "Disconnect" else "Connect"
         runButton.isEnabled = !state.running && state.connectedLabel != null
         cancelButton.isEnabled = state.running && !state.cancelling
         findViewById<View>(R.id.interruptedRunCard).isVisible = state.interruptedRunAvailable
@@ -748,7 +748,7 @@ class MainActivity : AppCompatActivity() {
                             putExtra(Intent.EXTRA_STREAM, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         },
-                        "Workspace teilen",
+                        "Share workspace",
                     ),
                 )
             }.onFailure { showError(it.message ?: "ZIP creation failed") }

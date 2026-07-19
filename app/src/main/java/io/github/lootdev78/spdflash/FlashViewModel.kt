@@ -247,7 +247,7 @@ class FlashViewModel(application: Application) : AndroidViewModel(application) {
         val index = _queue.value.indexOfFirst { it.id == command.id }
         if (index < 0) return
         val mutable = _queue.value.toMutableList()
-        mutable.add(index + 1, command.copy(id = System.nanoTime(), title = "${command.title} (Kopie)"))
+        mutable.add(index + 1, command.copy(id = System.nanoTime(), title = "${command.title} (copy)"))
         updateQueue(mutable)
     }
 
@@ -423,8 +423,8 @@ class FlashViewModel(application: Application) : AndroidViewModel(application) {
             "Exactly one Spreadtrum/Unisoc device may be connected for automatic Kick."
         }
         repeat(4) { pass ->
-            updateUi { it.copy(status = "Diag → Download, Schritt ${pass + 1} …", stage = DeviceStage.DIAG) }
-            appendLog("Kick-Schritt ${pass + 1}: %04x:%04x".format(currentDevice.vendorId, currentDevice.productId))
+            updateUi { it.copy(status = "Diag → Download, step ${pass + 1} …", stage = DeviceStage.DIAG) }
+            appendLog("Kick step ${pass + 1}: %04x:%04x".format(currentDevice.vendorId, currentDevice.productId))
             val outcome = UsbKickTransport.execute(
                 currentConnection,
                 currentDevice,

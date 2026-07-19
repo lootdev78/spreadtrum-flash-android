@@ -97,7 +97,7 @@ object UsbKickTransport {
 
     private fun write(connection: UsbDeviceConnection, endpoint: UsbEndpoint, bytes: ByteArray, timeoutMs: Int) {
         val written = connection.bulkTransfer(endpoint, bytes, bytes.size, timeoutMs)
-        check(written == bytes.size) { "USB-Schreibfehler: $written/${bytes.size} Bytes" }
+        check(written == bytes.size) { "USB write error: $written/${bytes.size} bytes" }
     }
 
     private fun read(connection: UsbDeviceConnection, endpoint: UsbEndpoint, timeoutMs: Int): ByteArray {

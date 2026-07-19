@@ -19,7 +19,7 @@ object CommandValidator {
         spec.arguments.forEachIndexed { index, argument ->
             val value = normalized[index]
             if (value.isBlank()) {
-                if (!argument.optional) errors[index] = "Erforderlich"
+                if (!argument.optional) errors[index] = "Required"
                 return@forEachIndexed
             }
             when (argument.type) {

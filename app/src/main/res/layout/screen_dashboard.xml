@@ -98,7 +98,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Aktualisieren"
+                        android:text="Refresh"
                         app:icon="@drawable/ic_refresh" />
 
                     <com.google.android.material.button.MaterialButton
@@ -107,7 +107,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
-                        android:text="Verbinden"
+                        android:text="Connect"
                         app:icon="@drawable/ic_usb" />
                 </LinearLayout>
             </LinearLayout>
@@ -117,7 +117,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Protokoll-Stage"
+            android:text="Protocol stage"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textStyle="bold" />
 
@@ -206,13 +206,13 @@
                     android:id="@+id/reconnectCheck"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Stage/Reconnect-Modus (--stage 1)" />
+                    android:text="Stage/reconnect mode (--stage 1)" />
 
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/syncCheck"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Synchroner Empfang (--sync)" />
+                    android:text="Synchronous receive (--sync)" />
 
                 <TextView
                     android:layout_width="match_parent"

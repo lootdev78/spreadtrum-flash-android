@@ -45,9 +45,9 @@ object BslResponse {
         0x9A to "Falsche SDRAM-Parameter",
         0xA0 to "Checksum error",
         0xA1 to "Checksum mismatch",
-        0xA2 to "Schreibfehler",
+        0xA2 to "Write error",
         0xA3 to "Chip ID mismatch",
-        0xA4 to "Flash-Konfigurationsfehler",
+        0xA4 to "Flash configuration error",
         0xA5 to "STL size error",
         0xAA to "Secure verification error",
         0xAC to "Flash writing is not enabled",
@@ -60,10 +60,10 @@ object BslResponse {
         0xBF to "Partition is not supported",
         0xD0 to "Invalid magic value",
         0xD1 to "Repartition failed",
-        0xD2 to "Flash-Lesefehler",
+        0xD2 to "Flash read error",
         0xD3 to "Device could not allocate memory",
         0xFE to "Command is not supported by the FDL",
-        0xFF to "FDL-Protokollmeldung",
+        0xFF to "FDL protocol message",
     )
 
     fun describe(code: Int): String = names[code] ?: "Unknown BSL response"

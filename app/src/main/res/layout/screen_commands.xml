@@ -107,7 +107,7 @@
                         android:layout_marginStart="10dp"
                         android:layout_weight="1"
                         android:gravity="end"
-                        android:text="Stage: beliebig"
+                        android:text="Stage: any"
                         android:textAppearance="?attr/textAppearanceLabelMedium"
                         android:textColor="@color/on_surface_variant" />
                 </LinearLayout>
@@ -286,7 +286,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Expertenmodus"
+                    android:text="Expert mode"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textStyle="bold" />
 
@@ -303,7 +303,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:hint="z. B. read_part boot 0 16m boot.img">
+                    android:hint="e.g. read_part boot 0 16m boot.img">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/rawCommandInput"
