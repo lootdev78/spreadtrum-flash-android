@@ -11,14 +11,20 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.ref }}
+  group: android-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Test, lint, and build
+    name: Verify, test, lint, and build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
+    env:
+      GRADLE_OPTS: >-
+        -Dorg.gradle.daemon=false
+        -Dorg.gradle.jvmargs=-Xmx4g
+        -Dkotlin.incremental=false
 
     steps:
       - name: Check out repository
@@ -30,33 +36,47 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Install Android toolchain
         shell: bash
         run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [[ ! -x "$SDKMANAGER" ]]; then
-            SDKMANAGER="$(command -v sdkmanager)"
-          fi
-          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          "$SDKMANAGER" \
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager \
             "platforms;android-36" \
             "build-tools;36.0.0" \
             "ndk;28.2.13676358" \
             "cmake;3.22.1"
 
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
       - name: Verify project structure
         run: python3 tools/verify_project.py
 
-      - name: Test, lint, and build debug APK
-        run: ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      - name: Run unit tests
+        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+
+      - name: Run Android lint
+        run: ./gradlew --no-daemon --stacktrace :app:lintDebug
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
       - name: Record APK checksum
-        run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          sha256sum "$APK" > "$APK.sha256"
 
-      - name: Upload APK and reports
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: sprd-flash-studio-debug-${{ github.sha }}
@@ -65,5 +85,16 @@ jobs:
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256
+
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprd-flash-studio-reports-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
             app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.xml
             app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
