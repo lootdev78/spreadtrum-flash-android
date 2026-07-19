@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_dashboard" android:icon="@drawable/ic_dashboard" android:title="@string/nav_overview" />
+    <item android:id="@+id/nav_loaders" android:icon="@drawable/ic_loader" android:title="@string/nav_loaders" />
+    <item android:id="@+id/nav_commands" android:icon="@drawable/ic_operations" android:title="@string/nav_operations" />
+    <item android:id="@+id/nav_queue" android:icon="@drawable/ic_queue" android:title="@string/nav_queue" />
+    <item android:id="@+id/nav_console" android:icon="@drawable/ic_terminal" android:title="@string/nav_console" />
+</menu>

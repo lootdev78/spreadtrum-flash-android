@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Product-ID intentionally omitted: Diag, boot and download stages re-enumerate with different PIDs. -->
+    <usb-device vendor-id="6018" />
+</resources>

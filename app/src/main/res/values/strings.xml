@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SPRD Flash Studio</string>
+    <string name="nav_overview">Overview</string>
+    <string name="nav_loaders">Loader</string>
+    <string name="nav_operations">Operations</string>
+    <string name="nav_queue">Queue</string>
+    <string name="nav_console">Console</string>
+    <string name="usb_required">USB OTG and a Spreadtrum/Unisoc device are required.</string>
+    <string name="danger_notice">Write, erase, and repartition operations can permanently make the target device unbootable.</string>
+</resources>

@@ -1,0 +1,11 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.jar binary
+*.zip binary
+*.apk binary
+# Preserve vendored upstream source bytes exactly; the lockfile hashes the working tree.
+app/src/main/cpp/vendor/** -text

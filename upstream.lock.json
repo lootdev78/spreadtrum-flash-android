@@ -1,0 +1,18 @@
+{
+    "schema": 1,
+    "updatedAtUtc": "2026-07-19T00:00:00Z",
+    "spreadtrumFlash": {
+        "repository": "TomKing062/spreadtrum_flash",
+        "requestedRef": "main",
+        "commit": "d24c21a0c93a545c0130668caa1826d59ceebe48",
+        "archiveSha256": null,
+        "sourceTreeSha256": "95023590994238d5776d6728e5e0f33011f32f4807506130bd525562d9578fac"
+    },
+    "libusb": {
+        "repository": "libusb/libusb",
+        "requestedRef": "v1.0.29",
+        "commit": "15a7ebb4d426c5ce196684347d2b7cafad862626",
+        "archiveSha256": null,
+        "sourceTreeSha256": "09ebc32528add916f50110e8c23bdb13c1dd842e03ea30eac965e32dfe2ae559"
+    }
+}

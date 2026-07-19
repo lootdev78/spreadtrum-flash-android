@@ -1,0 +1,5 @@
+{
+    "repository": "libusb/libusb",
+    "requestedRef": "v1.0.29",
+    "resolvedCommit": "15a7ebb4d426c5ce196684347d2b7cafad862626"
+}

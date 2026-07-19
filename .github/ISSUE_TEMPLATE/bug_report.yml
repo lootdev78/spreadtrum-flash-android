@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a reproducible application or build defect
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not upload proprietary FDL files, firmware, credentials, or private device data. Destructive hardware testing must use devices you are authorized to modify.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      placeholder: 2.1.0-debug
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android host device and version
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target chipset, storage type, and USB VID/PID sequence
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include the exact operation queue and stage transitions without attaching copyrighted binaries.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized log
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I am authorized to modify the target hardware and removed secrets and proprietary files from this report.
+          required: true
