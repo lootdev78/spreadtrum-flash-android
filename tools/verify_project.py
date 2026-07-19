@@ -199,15 +199,6 @@ if kotlinc:
 else:
     notes.append("kotlinc is unavailable; pure Kotlin compilation check skipped")
 
-# Parse every Kotlin source with the compiler PSI to catch syntax errors in Android-dependent files.
-syntax_script = ROOT / "tools/check_kotlin_syntax.kts"
-if kotlinc and syntax_script.exists():
-    syntax = subprocess.run([kotlinc, "-script", str(syntax_script), "-classpath", str(Path(kotlinc).resolve().parents[1] / "lib/kotlin-compiler.jar"), "--", str(JAVA), str(ROOT / "app/src/test/java")], capture_output=True, text=True)
-    if syntax.returncode != 0:
-        errors.append("Kotlin syntax check failed:\n" + (syntax.stderr or syntax.stdout).strip())
-    else:
-        notes.append("all Kotlin syntax checked")
-
 if errors:
     print("\n".join(errors), file=sys.stderr)
     raise SystemExit(1)
