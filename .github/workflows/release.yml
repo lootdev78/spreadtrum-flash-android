@@ -1,4 +1,4 @@
-name: Android Release CI
+name: Android CI Release
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: android-${{ github.workflow }}-${{ github.ref }}
@@ -20,9 +20,12 @@ concurrency:
 
 jobs:
   build:
-    name: Verify, test, lint, and build
+    name: Verify, test, lint, and debug build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
+    permissions:
+      contents: read
 
     env:
       GRADLE_OPTS: >-
@@ -90,57 +93,6 @@ jobs:
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256
 
-      - name: Decode release keystore
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > release.jks
-
-      - name: Build signed release APK
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          ANDROID_KEYSTORE: ${{ github.workspace }}/release.jks
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          ./gradlew \
-            --no-daemon \
-            --stacktrace \
-            :app:assembleRelease
-
-      - name: Generate release checksum
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          APK="app/build/outputs/apk/release/app-release.apk"
-          test -f "$APK"
-          sha256sum "$APK" > "$APK.sha256"
-
-      - name: Upload release artifact
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprd-flash-studio-release-${{ github.ref_name }}
-          retention-days: 30
-          path: |
-            app/build/outputs/apk/release/app-release.apk
-            app/build/outputs/apk/release/app-release.apk.sha256
-            app/build/outputs/mapping/release/
-
-      - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-          files: |
-            app/build/outputs/apk/release/app-release.apk
-            app/build/outputs/apk/release/app-release.apk.sha256
-
       - name: Upload test and lint reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -153,3 +105,152 @@ jobs:
             app/build/reports/lint-results-debug.xml
             app/build/reports/tests/testDebugUnitTest/
             app/build/test-results/testDebugUnitTest/
+
+  release:
+    name: Signed release build and GitHub release
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    timeout-minutes: 45
+
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    env:
+      GRADLE_OPTS: >-
+        -Dorg.gradle.daemon=false
+        -Dorg.gradle.jvmargs=-Xmx4g
+        -Dkotlin.incremental=false
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;28.2.13676358" \
+            "cmake;3.22.1"
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Check release signing secrets
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KEYSTORE_BASE64}" ]; then
+            echo "::error::Missing secret ANDROID_KEYSTORE_BASE64"
+            exit 1
+          fi
+
+          if [ -z "${KEYSTORE_PASSWORD}" ]; then
+            echo "::error::Missing secret ANDROID_KEYSTORE_PASSWORD"
+            exit 1
+          fi
+
+          if [ -z "${KEY_ALIAS}" ]; then
+            echo "::error::Missing secret ANDROID_KEY_ALIAS"
+            exit 1
+          fi
+
+          if [ -z "${KEY_PASSWORD}" ]; then
+            echo "::error::Missing secret ANDROID_KEY_PASSWORD"
+            exit 1
+          fi
+
+      - name: Decode release keystore
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "${RUNNER_TEMP}/release.jks"
+          test -f "${RUNNER_TEMP}/release.jks"
+
+      - name: Build signed release APK
+        env:
+          ANDROID_KEYSTORE: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew \
+            --no-daemon \
+            --stacktrace \
+            :app:assembleRelease
+
+      - name: Verify APK signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --print-certs "$APK"
+
+      - name: Prepare release files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="app/build/outputs/apk/release/app-release.apk"
+          OUT_DIR="release-output"
+          OUT_APK="${OUT_DIR}/sprd-flash-studio-${GITHUB_REF_NAME}.apk"
+
+          test -f "$APK"
+
+          mkdir -p "$OUT_DIR"
+          cp "$APK" "$OUT_APK"
+
+          (
+            cd "$OUT_DIR"
+            sha256sum "sprd-flash-studio-${GITHUB_REF_NAME}.apk" > "sprd-flash-studio-${GITHUB_REF_NAME}.apk.sha256"
+          )
+
+          if [ -f "app/build/outputs/mapping/release/mapping.txt" ]; then
+            cp "app/build/outputs/mapping/release/mapping.txt" "${OUT_DIR}/mapping-${GITHUB_REF_NAME}.txt"
+          fi
+
+      - name: Upload signed release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprd-flash-studio-release-${{ github.ref_name }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            release-output/*
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SPRD Flash Studio ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: |
+            release-output/*
