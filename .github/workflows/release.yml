@@ -1,4 +1,4 @@
-name: Android CI Release
+name: Android CI
 
 on:
   push:
@@ -10,19 +10,37 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish a GitHub Release after building the signed APK"
+        required: true
+        default: false
+        type: boolean
+      release_tag:
+        description: "Release tag for manual release publishing, for example v2.1.0. Leave empty to only build/upload artifact."
+        required: false
+        default: ""
+        type: string
+      prerelease:
+        description: "Mark the GitHub Release as prerelease"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.workflow }}-${{ github.ref }}
+  group: android-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  debug:
     name: Verify, test, lint, and debug build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v'))
 
     permissions:
       contents: read
@@ -107,13 +125,11 @@ jobs:
             app/build/test-results/testDebugUnitTest/
 
   release:
-    name: Signed release build and GitHub release
+    name: Signed release APK
     runs-on: ubuntu-latest
-    needs:
-      - build
     timeout-minutes: 45
 
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
 
     permissions:
       contents: write
@@ -154,6 +170,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Verify project structure
+        run: python3 tools/verify_project.py
+
       - name: Check release signing secrets
         shell: bash
         env:
@@ -191,7 +210,13 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "${RUNNER_TEMP}/release.jks"
-          test -f "${RUNNER_TEMP}/release.jks"
+          test -s "${RUNNER_TEMP}/release.jks"
+
+      - name: Run unit tests
+        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+
+      - name: Run release lint
+        run: ./gradlew --no-daemon --stacktrace :app:lintRelease
 
       - name: Build signed release APK
         env:
@@ -211,16 +236,49 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
-          "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --print-certs "$APK"
+          "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        env:
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          INPUT_PUBLISH_RELEASE: ${{ inputs.publish_release }}
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG_NAME="${GITHUB_REF_NAME}"
+            ASSET_SUFFIX="${GITHUB_REF_NAME}"
+            SHOULD_PUBLISH_RELEASE="true"
+          else
+            TAG_NAME="${INPUT_RELEASE_TAG}"
+            SHOULD_PUBLISH_RELEASE="${INPUT_PUBLISH_RELEASE}"
+
+            if [ -n "${TAG_NAME}" ]; then
+              ASSET_SUFFIX="${TAG_NAME}"
+            else
+              ASSET_SUFFIX="manual-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+              SHOULD_PUBLISH_RELEASE="false"
+            fi
+          fi
+
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "asset_suffix=${ASSET_SUFFIX}" >> "$GITHUB_OUTPUT"
+          echo "should_publish_release=${SHOULD_PUBLISH_RELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release files
         shell: bash
+        env:
+          ASSET_SUFFIX: ${{ steps.meta.outputs.asset_suffix }}
         run: |
           set -euo pipefail
 
           APK="app/build/outputs/apk/release/app-release.apk"
           OUT_DIR="release-output"
-          OUT_APK="${OUT_DIR}/sprd-flash-studio-${GITHUB_REF_NAME}.apk"
+          OUT_APK="${OUT_DIR}/sprd-flash-studio-${ASSET_SUFFIX}.apk"
 
           test -f "$APK"
 
@@ -229,28 +287,43 @@ jobs:
 
           (
             cd "$OUT_DIR"
-            sha256sum "sprd-flash-studio-${GITHUB_REF_NAME}.apk" > "sprd-flash-studio-${GITHUB_REF_NAME}.apk.sha256"
+            sha256sum "sprd-flash-studio-${ASSET_SUFFIX}.apk" > "sprd-flash-studio-${ASSET_SUFFIX}.apk.sha256"
           )
 
           if [ -f "app/build/outputs/mapping/release/mapping.txt" ]; then
-            cp "app/build/outputs/mapping/release/mapping.txt" "${OUT_DIR}/mapping-${GITHUB_REF_NAME}.txt"
+            cp "app/build/outputs/mapping/release/mapping.txt" "${OUT_DIR}/mapping-${ASSET_SUFFIX}.txt"
           fi
 
-      - name: Upload signed release artifact
+      - name: Upload signed release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sprd-flash-studio-release-${{ github.ref_name }}
+          name: sprd-flash-studio-release-${{ steps.meta.outputs.asset_suffix }}
           if-no-files-found: error
           retention-days: 30
           path: |
             release-output/*
 
+      - name: Upload release reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprd-flash-studio-release-reports-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            app/build/reports/lint-results-release.html
+            app/build/reports/lint-results-release.xml
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
+
       - name: Publish GitHub Release
+        if: steps.meta.outputs.should_publish_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          name: SPRD Flash Studio ${{ github.ref_name }}
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          name: SPRD Flash Studio ${{ steps.meta.outputs.tag_name }}
           generate_release_notes: true
           draft: false
-          prerelease: false
+          prerelease: ${{ inputs.prerelease || false }}
           files: |
             release-output/*
